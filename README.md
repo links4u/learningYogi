@@ -205,20 +205,23 @@ curl -X POST http://localhost:5060/api/timetable/upload \
 
 ## 🧪 Testing
 
+The project includes a comprehensive testing suite organized by test type:
+
 ```bash
 cd backend
-npm test
+npm test          # Runs all tests
 ```
 
-**Backend tests:**
-```bash
-cd backend
-npm test
-```
+### Test Structure
+- **Unit Tests** (`tests/unit/`): Individual services and utility functions (Normalization, Parser, Validator, Sample Data).
+- **Integration Tests** (`tests/integration/`): API endpoint behavior and controller logic.
+- **End-to-End Tests** (`tests/e2e/`): Full timetable extraction lifecycle from upload to response.
 
-**Run tests in watch mode:**
+### Running specific tests
 ```bash
-npm run test:watch
+npx jest tests/unit         # Unit tests only
+npx jest tests/integration  # Integration tests only
+npx jest tests/e2e          # E2E tests only
 ```
 
 ## 📄 License
