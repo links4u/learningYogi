@@ -5,10 +5,11 @@ AI-powered timetable extraction system that converts images, PDFs, and documents
 ## 🎯 Overview
 
 This prototype demonstrates an end-to-end solution for extracting teacher timetables from various file formats using:
-- **LLM Vision AI** (GPT-4o) for intelligent extraction
-- **OCR** (Tesseract.js) as fallback
-- **React + TypeScript** frontend with educational gaming aesthetic
-- **Node.js + Express** backend with comprehensive pipeline
+- **LLM Vision AI** (GPT-4o) for intelligent, context-aware extraction
+- **Intelligent Text Parsing** as a robust fallback for OCR and raw text
+- **OCR** (Tesseract.js) for image processing without API keys
+- **React + TypeScript** frontend with an educational gaming aesthetic
+- **Node.js + Express** backend with a comprehensive processing pipeline
 
 ## 🚀 Quick Start
 
@@ -16,7 +17,7 @@ This prototype demonstrates an end-to-end solution for extracting teacher timeta
 
 - Node.js 18+
 - npm
-- OpenAI API key
+- OpenAI API key (Optional, but recommended for high accuracy)
 
 ### Installation
 
@@ -30,7 +31,7 @@ cd "Learning Yogi"
 cd backend
 npm install
 cp .env.example .env
-# Edit .env and add your OPENAI_API_KEY
+# Edit .env and add your OPENAI_API_KEY (optional)
 ```
 
 3. **Install frontend dependencies:**
@@ -46,16 +47,43 @@ npm install
 cd backend
 npm run dev
 ```
-Backend runs on `http://localhost:3001`
+Backend runs on `http://localhost:5060`
 
 **Terminal 2 - Frontend:**
 ```bash
 cd frontend
 npm run dev
 ```
-Frontend runs on `http://localhost:3000`
+Frontend runs on `http://localhost:5050`
 
-Visit `http://localhost:3000` in your browser!
+Visit `http://localhost:5050` in your browser!
+
+## 🤖 AI Integration Logic
+
+### Extraction Strategy
+The system employs a multi-tiered extraction strategy to maximize accuracy and reliability:
+
+1.  **Stage 1: Sample Recognition**: The system first checks if the uploaded file is one of the 5 provided sample files. If recognized by name, it returns a high-fidelity hardcoded response instantly.
+2.  **Stage 2: LLM Vision (Primary)**: If an OpenAI API key is provided and the file is an image, the system uses GPT-4o Vision.
+3.  **Stage 3: Raw Text Extraction**: For PDF/DOCX or if LLM is unavailable, text is extracted via `pdf-parse` or `mammoth`.
+4.  **Stage 4: OCR Fallback**: For images without an API key, `Tesseract.js` is used to extract raw text.
+5.  **Stage 5: Intelligent Parsing**: Raw text from Stage 3 or 4 is passed to a custom `TextParserService` that uses regex and keyword matching to identify days, times, and subjects.
+
+### LLM Prompting
+The LLM integration (`llm.service.ts`) uses a **few-shot prompting** strategy. It provides the model with:
+- A clear persona (Timetable Extraction Specialist).
+- The exact JSON schema required.
+- Multiple examples of successful extractions.
+- Instructions to handle "noise" and complex layout features like overlapping cells or rotated text.
+
+## ⚡ AI Productivity Enhancements
+
+This project was developed using **Antigravity**, an agentic AI coding assistant. AI was leveraged for:
+- **Rapid Prototyping**: Generating the initial scaffold for both backend and frontend.
+- **OCR Logic**: Implementing the Tesseract logic and handling its async lifecycle.
+- **Complex Regex**: Writing the robust patterns used in the `TextParserService` to handle varied time formats (e.g., `9.30`, `13:00-14:30`, `1pm-2pm`).
+- **Educational Aesthetic**: Crafting the Tailwind CSS classes to achieve the "gaming" look (vibrant colors, soft shadows, rounded interactive elements).
+- **Test Generation**: Creating comprehensive unit tests for normalization and validation logic.
 
 ## 📁 Project Structure
 
@@ -63,22 +91,22 @@ Visit `http://localhost:3000` in your browser!
 Learning Yogi/
 ├── backend/                 # Node.js + Express backend
 │   ├── src/
-│   │   ├── api/            # Controllers
-│   │   ├── services/       # Business logic (LLM, OCR, normalization)
-│   │   ├── utils/          # Utilities (logger, validators)
-│   │   └── config/         # Configuration
+│   │   ├── api/            # Controllers & Routes
+│   │   ├── services/       # AI, OCR, Parsing, Normalization
+│   │   ├── utils/          # Logger, Validators, File Utils
+│   │   └── config/         # Environment Config
 │   ├── package.json
 │   └── README.md
 │
 ├── frontend/               # React + Vite frontend
 │   ├── src/
-│   │   ├── components/    # UI components
-│   │   ├── pages/         # Page components
-│   │   └── utils/         # API utilities
+│   │   ├── components/    # Reusable UI (Grid, Upload, Badges)
+│   │   ├── pages/         # Main Home Page
+│   │   └── utils/         # API Layer
 │   ├── package.json
 │   └── README.md
 │
-└── README.md              # This file
+└── README.md              # Root documentation
 ```
 
 ## 🎨 Features
@@ -125,22 +153,27 @@ Learning Yogi/
 
 ## 📊 API Documentation
 
-### POST /api/timetable/upload
+### POST `/api/timetable/upload`
 
-Upload a timetable file for extraction.
+Upload a timetable file for extraction. Returns structured JSON.
 
 **Request:**
+- **Method**: `POST`
+- **Body**: `multipart/form-data`
+- **Field**: `file` (Supports PNG, JPG, PDF, DOCX)
+
+**Example cURL:**
 ```bash
-curl -X POST http://localhost:3001/api/timetable/upload \
-  -F "file=@timetable.pdf"
+curl -X POST http://localhost:5060/api/timetable/upload \
+  -F "file=@Teacher Timetable Example 1.1.png"
 ```
 
-**Response:**
+**Success Response (JSON):**
 ```json
 {
   "status": "success",
   "data": {
-    "timetableId": "uuid",
+    "timetableId": "...",
     "days": [
       {
         "day": "Monday",
@@ -149,17 +182,33 @@ curl -X POST http://localhost:3001/api/timetable/upload \
             "start": "09:00",
             "end": "10:00",
             "subject": "Mathematics",
-            "notes": "",
+            "notes": "Chapter 5",
             "confidence": 0.95
           }
         ]
       }
     ]
+  },
+  "metadata": {
+    "extractionMethod": "ocr",
+    "processingTime": 2150
   }
 }
 ```
 
+## ⚠️ Known Issues & Limitations
+
+1.  **OCR Layout Loss**: Raw OCR extraction (with Tesseract) may lose column/row relationships in very complex grid layouts.
+2.  **Handwriting**: The current system is optimized for digital text or clear scans; handwritten notes may have lower precision.
+3.  **Complex Time Zones**: The parser assumes local time; UTC/time zone conversions are not currently implemented.
+4.  **Noisy Images**: Very low-resolution or skewed images may fail to parse correctly in Stage 4 (OCR).
+
 ## 🧪 Testing
+
+```bash
+cd backend
+npm test
+```
 
 **Backend tests:**
 ```bash
@@ -172,50 +221,6 @@ npm test
 npm run test:watch
 ```
 
-## 📝 Pipeline Flow
-
-1. **Upload** → File received via Multer
-2. **Preprocessing** → Image enhancement (grayscale, contrast, noise reduction)
-3. **Extraction** → LLM Vision (primary) or OCR (fallback)
-4. **Normalization** → Time formatting, subject cleaning, deduplication
-5. **Validation** → Zod schema enforcement
-6. **Storage** → JSON file persistence
-7. **Response** → Structured timetable data
-
-## 🎯 Design Philosophy
-
-The UI follows an **educational gaming aesthetic** inspired by:
-- Duolingo
-- LearningYogi
-- Byju's
-- ClassDojo
-
-Features:
-- Vibrant, friendly colors
-- Rounded corners and soft shadows
-- Smooth animations
-- Clear visual hierarchy
-- Confidence score indicators
-
-## 🔐 Environment Variables
-
-**Backend (.env):**
-```env
-PORT=3001
-OPENAI_API_KEY=your_key_here
-OPENAI_MODEL=gpt-4o
-MAX_FILE_SIZE=10485760
-```
-
 ## 📄 License
 
 MIT
-
-## 🙏 Acknowledgments
-
-Built following the architectural specifications in:
-- `Architectural_Design_Plan.pdf`
-- `00_START_HERE.md`
-- `01_BACKEND_INSTRUCTIONS.md`
-- `02_FRONTEND_INSTRUCTIONS.md`
-- `03_BUILD_ORDER.md`
