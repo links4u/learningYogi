@@ -1,4 +1,4 @@
-import { Timetable, DaySchedule, TimeBlock } from '../utils/schema.validator';
+import { Timetable, DaySchedule } from '../utils/schema.validator';
 import logger from '../utils/logger';
 
 /**
