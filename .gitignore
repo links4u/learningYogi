@@ -1,0 +1,30 @@
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+logs/
+
+# Local env files
+.env
+.env.local
+.env.*.local
+
+# Build
+dist/
+build/
+
+# Project specific
+backend/uploads/
+backend/data/
+backend/logs/
+frontend/dist/
+coverage/
+testing-ocr.ts
+test_preprocessed_*
+*_ocr_output.txt
